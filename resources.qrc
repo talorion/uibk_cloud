@@ -1,0 +1,23 @@
+<RCC>
+    <qresource prefix="/images">
+        <file>images/application-javascript.png</file>
+        <file>images/class.png</file>
+        <file>images/clear.png</file>
+        <file>images/copy.png</file>
+        <file>images/cut.png</file>
+        <file>images/debug_script.png</file>
+        <file>images/func.png</file>
+        <file>images/new.png</file>
+        <file>images/open.png</file>
+        <file>images/paste.png</file>
+        <file>images/save.png</file>
+        <file>images/skip.png</file>
+        <file>images/splash.png</file>
+        <file>images/start_script.png</file>
+        <file>images/stop_script.png</file>
+        <file>images/text-x-script.png</file>
+        <file>images/var.png</file>
+        <file>images/record.png</file>
+        <file>images/record-red.png</file>
+    </qresource>
+</RCC>
