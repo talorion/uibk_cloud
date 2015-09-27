@@ -65,6 +65,8 @@ void uibk_cloud_mainwindow::setupGraph()
 {
     plot = new QCustomPlot();
     plot->yAxis->setAutoTickCount(2);
+    plot->yAxis->setScaleType(QCPAxis::stLogarithmic);
+    plot->yAxis->setScaleLogBase(10);
     plot->xAxis->setTickLabelType(QCPAxis::ltDateTime);
     plot->xAxis->setAutoTickCount(2);
     plot->xAxis->setRangeLower(QDateTime::currentMSecsSinceEpoch()/1000.0);

@@ -153,10 +153,11 @@ states tof_data_read_worker::prepare_buffers_bg()
 {
     states ret = prepare_buffers();
 
-    m_bg_Spectrum->clear();
-    m_bg_Spectrum->resize(m_current_tof_Spectrum->size());
-    m_bg_Spectrum->fill(0);
-    bg_spect_cnt = 0;
+    clear_bg();
+//    m_bg_Spectrum->clear();
+//    m_bg_Spectrum->resize(m_current_tof_Spectrum->size());
+//    m_bg_Spectrum->fill(0);
+//    bg_spect_cnt = 0;
     return ret;
 }
 
@@ -348,10 +349,11 @@ states tof_data_read_worker::record_bg_spec()
             *1.0e-9;
 
     if(m_current_tof_Spectrum->size() != m_bg_Spectrum->size()){
-        m_bg_Spectrum->clear();
-        m_bg_Spectrum->resize(m_current_tof_Spectrum->size());
-        m_bg_Spectrum->fill(0);
-        bg_spect_cnt = 0;
+        clear_bg();
+//        m_bg_Spectrum->clear();
+//        m_bg_Spectrum->resize(m_current_tof_Spectrum->size());
+//        m_bg_Spectrum->fill(0);
+//        bg_spect_cnt = 0;
     }
 
     for(int i=0; i<m_current_tof_Spectrum->size();i++){
@@ -460,9 +462,10 @@ void tof_data_read_worker::load_last_background()
     if(!m_bg_Spectrum)
         return;
 
+    clear_bg();
     bg_spect_cnt = cnt;
     bg_fact = fct;
-    m_bg_Spectrum->clear();
+    //m_bg_Spectrum->clear();
     *m_bg_Spectrum = bg;
 }
 
