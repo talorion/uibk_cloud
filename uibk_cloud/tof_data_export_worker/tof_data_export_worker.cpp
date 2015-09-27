@@ -109,7 +109,8 @@ void tof_data_export_worker::export_data()
 
     QTextStream output(&data);
 
-    output<<QString::number(avrg_time.toMSecsSinceEpoch())<<delimiter;
+    output<<QString::number((qint64) (avrg_time.toMSecsSinceEpoch()/1000))<<delimiter;
+//    output<<QString::number(avrg_time.toMSecsSinceEpoch())<<delimiter;
     QMap<QString, double >::iterator vit;
     for(vit = averages.begin(); vit != averages.end(); ++vit){
         output<<QString::number(vit.value());
