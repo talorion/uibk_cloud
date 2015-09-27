@@ -107,6 +107,7 @@ void tof_data_read_thread::start_reading_bg()
 {
     QMutexLocker locker(&mutex);
 
+    emit bg_measurement_started();
     setBg_meas(true);
     //this->m_config = config;
     //qDebug()<<m_config.getElements().size();
@@ -121,6 +122,8 @@ void tof_data_read_thread::start_reading_bg()
         restart = true;
         condition.wakeOne();
     }
+
+
 }
 
 void tof_data_read_thread::pause_reading()
@@ -147,7 +150,7 @@ void tof_data_read_thread::run()
     tof_data_read_worker wrk;
     connect(&wrk,SIGNAL(measurement_started()),this,SLOT(do_measurement_started()),Qt::QueuedConnection);
     connect(&wrk,SIGNAL(measurement_stopped()),this,SLOT(do_measurement_stopped()),Qt::QueuedConnection);
-
+    connect(this,SIGNAL(bg_measurement_started()),&wrk,SLOT(clear_bg()));
     mutex.unlock();
 
     forever {
@@ -155,6 +158,7 @@ void tof_data_read_thread::run()
         //wrk.setConfig(m_config);
         uibk_cloud_configuration l_config = m_config;
         bool bgs = bg_meas;
+        wrk.save_current_background();
         mutex.unlock();
 
         states state = IDLE;
@@ -178,12 +182,14 @@ void tof_data_read_thread::run()
                     wrk.setConfig(l_config);
                     wrk.init();
                     state =  wrk.prepare_buffers();
+                    wrk.save_current_background();
                 }
                 break;
             }
             case WAIT_F_DTA:        {state =  wrk.wait_for_data(); break;}
             case SWAP_BUFS:         {state =  wrk.swap_buffers(); break;}
             case PROC_DTA:          {
+
                 if(bgs){
                     state = wrk.record_bg_spec();
                 }else{

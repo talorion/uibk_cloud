@@ -1,6 +1,7 @@
 #include "tof_data_export_worker.h"
 #include <QDebug>
 #include <QFile>
+#include <QSettings>
 #include <QTextStream>
 
 tof_data_export_worker::tof_data_export_worker(QObject *par) :
@@ -12,7 +13,8 @@ tof_data_export_worker::tof_data_export_worker(QObject *par) :
     last_avrg_time(),
     averages(),
     avrg_time(),
-    last_export_state(false)
+    last_export_state(false),
+    flod()
 {
     connect(&export_timer,SIGNAL(timeout()), this, SLOT(timer_tick()));
 
@@ -20,7 +22,7 @@ tof_data_export_worker::tof_data_export_worker(QObject *par) :
 
 tof_data_export_worker::~tof_data_export_worker()
 {
-
+save_folder();
 }
 
 void tof_data_export_worker::receive_data(QDateTime mtime, groups_t groups)
@@ -46,6 +48,11 @@ void tof_data_export_worker::set_export_interval(int msec)
     export_timer.setInterval(msec);
 }
 
+int tof_data_export_worker::get_export_interval()
+{
+    return export_timer.interval();
+}
+
 void tof_data_export_worker::measurement_stopped()
 {
     bool tmp = export_timer.isActive();
@@ -62,7 +69,7 @@ void tof_data_export_worker::measurement_started()
 
 void tof_data_export_worker::timer_tick()
 {
-    qDebug()<<"tof_data_export_worker::timer_tick";
+    //
     if(averages.isEmpty())
         export_nans();
     else
@@ -89,6 +96,7 @@ void tof_data_export_worker::reset_data()
 
 void tof_data_export_worker::export_data()
 {
+    qDebug()<<"tof_data_export_worker::timer_tick";
     QString filename = generate_filename();
     QFile data(filename);
     QString delimiter = ";";
@@ -110,30 +118,31 @@ void tof_data_export_worker::export_data()
     output<<newline;
     output.flush();
 
+    emit data_exported(avrg_time, averages);
     //data.close();
 }
 
 void tof_data_export_worker::export_nans()
 {
-//    QString filename = "file.txt";
-//    QFile data(filename);
-//    QString delimiter = ";";
-//    QString newline = "\n";
-//    if (!data.open(QFile::WriteOnly | QFile::Append )){
-//        qDebug()<<QString("Cannot read file %1:\n%2.").arg(filename).arg(data.errorString());
-//        return;
-//    }
+    //    QString filename = "file.txt";
+    //    QFile data(filename);
+    //    QString delimiter = ";";
+    //    QString newline = "\n";
+    //    if (!data.open(QFile::WriteOnly | QFile::Append )){
+    //        qDebug()<<QString("Cannot read file %1:\n%2.").arg(filename).arg(data.errorString());
+    //        return;
+    //    }
 
-//    QTextStream output(&data);
-//    last_avrg_time = QDateTime::currentDateTime();
-//    output<<QString::number(last_avrg_time.toMSecsSinceEpoch())<<delimiter;
-//    QMap<QString, double >::iterator vit;
-//    for(vit = last_averages.begin(); vit != last_averages.end(); ++vit){
-//        output<<QString::number(qQNaN());
-//        if(vit != last_averages.end()-1)
-//            output<<delimiter;
-//    }
-//    output<<newline;
+    //    QTextStream output(&data);
+    //    last_avrg_time = QDateTime::currentDateTime();
+    //    output<<QString::number(last_avrg_time.toMSecsSinceEpoch())<<delimiter;
+    //    QMap<QString, double >::iterator vit;
+    //    for(vit = last_averages.begin(); vit != last_averages.end(); ++vit){
+    //        output<<QString::number(qQNaN());
+    //        if(vit != last_averages.end()-1)
+    //            output<<delimiter;
+    //    }
+    //    output<<newline;
     //output.flush();
 
     //data.close();
@@ -169,11 +178,32 @@ void tof_data_export_worker::calculate_averages()
 
 QString tof_data_export_worker::generate_filename()
 {
+    QSettings settings;
+    settings.beginGroup("tof_data_export_worker");
+    QString export_file_folder = settings.value("export_file_folder","D:\\CLOUDX\\Zabbix").toString();
+    //QString bg_filename = settings.value("bg_file", "background.dat").toString();
+    settings.endGroup();
+
+    flod = export_file_folder;
+
     //QString export_file_folder = "C:\\Tofwerk\\Data\\Zabbix";
-    QString export_file_folder = "D:\\CLOUDX\\Zabbix";
+    //QString export_file_folder = "D:\\CLOUDX\\Zabbix";
     QDateTime now = QDateTime::currentDateTime();
     QString export_file_suffux = "Zabbix_data.txt";
     return export_file_folder+"\\"+now.toString("yyMMdd_")+export_file_suffux;
     //return "file.txt";
+}
+
+void tof_data_export_worker::save_folder()
+{
+    if(flod.isNull() || flod.isEmpty())
+        return;
+
+    QSettings settings;
+    settings.beginGroup("tof_data_export_worker");
+    //QString export_file_folder = settings.value("export_file_folder","D:\\CLOUDX\\Zabbix").toString();
+    settings.setValue("export_file_folder", flod);
+    //QString bg_filename = settings.value("bg_file", "background.dat").toString();
+    settings.endGroup();
 }
 

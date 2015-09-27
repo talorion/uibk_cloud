@@ -41,8 +41,11 @@ data_aquisition_dll_wrapper::data_aquisition_dll_wrapper(QObject *par) :
      m_GetSharedMemory(NULL),
      m_SetMassCalib(NULL),
      m_GetMassCalib(NULL),
+     m_TwLockBuf(NULL),
+     m_TwUnLockBuf(NULL),
      m_data_aquisition_dll(NULL),
      m_success_return(4)
+
 {
 
 }
@@ -163,6 +166,14 @@ void data_aquisition_dll_wrapper::init(QString dll_name)
     //GetMassCalib_prototype m_GetMassCalib;
     meth = "TwGetMassCalib";
     m_GetMassCalib = resolve_method<GetMassCalib_prototype>(meth);
+
+    //TwLockBuf_prototype m_TwLockBuf;
+    meth = "TwLockBuf";
+    m_TwLockBuf = resolve_method<TwLockBuf_prototype>(meth);
+
+    //TwUnLockBuf_prototype m_TwUnLockBuf;
+    meth = "TwUnLockBuf";
+    m_TwUnLockBuf = resolve_method<TwUnLockBuf_prototype>(meth);
 
     initialize_dll();
 
@@ -489,6 +500,22 @@ int data_aquisition_dll_wrapper::set_mass_calib(int mode, QVector<double> &p, QV
             return -2;
         }
         return twErrChk(m_SetMassCalib(mode, nbrParams, p.data() ,nbrPoints, mass.data(), tof.data(), weight.data()));
+    }
+    return -1;
+}
+
+int data_aquisition_dll_wrapper::lock_buf(int TimeOut, int BufToLock)
+{
+    if(m_TwLockBuf){
+        return twErrChk(m_TwLockBuf(TimeOut,BufToLock));
+    }
+    return -1;
+}
+
+int data_aquisition_dll_wrapper::unlock_buf(int BufToLock)
+{
+    if(m_TwUnLockBuf){
+        return twErrChk(m_TwUnLockBuf(BufToLock));
     }
     return -1;
 }

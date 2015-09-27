@@ -41,6 +41,8 @@ typedef int     (*GetDescriptor_prototype)(void* pBufDesc);
 typedef int     (*GetSharedMemory_prototype)(void* pShMem, bool KeepSharedMemMapped);
 typedef int     (*SetMassCalib_prototype)(int , int , double* , int , double* , double* , double* );
 typedef int     (*GetMassCalib_prototype)(int* , int* , double* , int* , double* , double* , double* );
+typedef int     (*TwLockBuf_prototype)(int , int );
+typedef int     (*TwUnLockBuf_prototype)(int );
 
 class data_aquisition_dll_wrapper: public QObject
 {
@@ -51,6 +53,7 @@ public:
     Q_DISABLE_COPY(data_aquisition_dll_wrapper)
 
     void init(QString dll_name = "C:\\Tofwerk\\TofDaq_1.97_noHW\\TofDaqDll.dll");
+    //void init(QString dll_name = "C:\\Tofwerk\\TofDaq\\TofDaqDll.dll");
     void dispose();
 
 public:
@@ -87,6 +90,9 @@ public:
 
     int get_mass_calib(int &mode,  QVector<double> &p,  QVector<double> &mass ,  QVector<double> &tof,  QVector<double> &weight);
     int set_mass_calib(int mode,   QVector<double> &p,  QVector<double> &mass,  QVector<double> &tof,  QVector<double> &weight);
+
+    int lock_buf(int TimeOut, int BufToLock);
+    int unlock_buf(int BufToLock);
 
 private:
     template<typename T>
@@ -126,6 +132,9 @@ private:
     GetSharedMemory_prototype m_GetSharedMemory;
     SetMassCalib_prototype m_SetMassCalib;
     GetMassCalib_prototype m_GetMassCalib;
+
+    TwLockBuf_prototype m_TwLockBuf;
+    TwUnLockBuf_prototype m_TwUnLockBuf;
 
     QLibrary* m_data_aquisition_dll;
     int m_success_return;

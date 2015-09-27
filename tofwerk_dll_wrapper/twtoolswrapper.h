@@ -59,6 +59,7 @@ public:
     Q_DISABLE_COPY(TwToolsWrapper)
 
     int init(QString dll_name = "C:\\Tofwerk\\TofDaq_1.97_noHW\\TwToolDll.dll");
+    //int init(QString dll_name = "C:\\Tofwerk\\TofDaq\\TwToolDll.dll");
     void dispose();
 
 public:

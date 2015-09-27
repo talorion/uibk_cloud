@@ -40,6 +40,7 @@ private slots:
 signals:
     void data_processed(QDateTime meantime, groups_t groups);
     void measurement_started();
+    void bg_measurement_started();
     void measurement_stopped();
     void bg_meas_state_changed(bool);
 

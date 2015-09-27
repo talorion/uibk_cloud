@@ -32,6 +32,7 @@ public slots:
 
     void save_current_background();
     void load_last_background();
+    void clear_bg();
 
 signals:
     void tof_daq_dll_error(int);
@@ -91,6 +92,7 @@ private:
     QMap<QString, double> groups;
 
     float bg_spect_cnt;
+    float bg_fact ;
 
     bool measurement_running;
 

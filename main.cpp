@@ -46,6 +46,9 @@ int main(int argc, char *argv[])
     QObject::connect(&w,SIGNAL(start_bg_recording()), &tdrt, SLOT(start_reading_bg()));
     QObject::connect(&w,SIGNAL(stop_bg_recording()), &tdrt, SLOT(start_reading()));
     QObject::connect(&tdrt,SIGNAL(bg_meas_state_changed(bool)),&w,SLOT(bg_meas_state_changed(bool)));
+    QObject::connect(&w, SIGNAL(start_exoprt()),&tdet,SIGNAL(enable_exporting()));
+    QObject::connect(&w, SIGNAL(stop_export()),&tdet,SIGNAL(disabele_exporting()));
+    QObject::connect(&tdet, SIGNAL(data_exported(QDateTime,averages_t)),&w,SLOT(receive_exported_data(QDateTime,averages_t)));
     w.show();
 
     // read csv file:

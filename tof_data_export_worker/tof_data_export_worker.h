@@ -31,6 +31,7 @@ public slots:
     void enable_exporting();
     void disabele_exporting();
     void set_export_interval(int msec);
+    int get_export_interval();
     void measurement_stopped();
     void measurement_started();
 
@@ -41,6 +42,7 @@ private:
     void calculate_averages();
 
     QString generate_filename();
+    void save_folder();
 
 private:
     QMap<QString, QList<double> > values;
@@ -54,6 +56,7 @@ private:
     QDateTime avrg_time;
 
     bool last_export_state;
+    QString flod;
 
 
 };

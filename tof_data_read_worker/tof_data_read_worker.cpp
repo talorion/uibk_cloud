@@ -21,6 +21,7 @@ tof_data_read_worker::tof_data_read_worker(QObject *par) :
     meantime(),
     groups(),
     bg_spect_cnt(0),
+    bg_fact(1),
     measurement_running(false)
 {
     m_dll.init();
@@ -144,6 +145,7 @@ states tof_data_read_worker::prepare_buffers()
     //    QVector<float> stick_Spectrum(NbrPeaks, -2);
     //    QVector<float> Masses(NbrPeaks, -2);
 
+
     return CHECK_AQ_ACTIVE;
 }
 
@@ -164,6 +166,7 @@ states tof_data_read_worker::wait_for_data()
     float TofPeriod = m_desc.data()->TofPeriod;
     float NbrSegments = m_desc.data()->NbrSegments;
     float NbrBlocks = m_desc.data()->NbrBlocks;
+    int NbrBufs = m_desc.data()->NbrBufs;
     //float SingleIonSignal = m_desc.data()->SingleIonSignal;
     //float SampleInterval = m_desc.data()->SampleInterval;
 
@@ -174,14 +177,43 @@ states tof_data_read_worker::wait_for_data()
             *1.0e-9;
     int timeout = (smpletime*1000)*3; //
 
+
+    //if(failed(m_dll.wait_for_new_data(timeout, m_desc, m_ptr, true)))
     if(failed(m_dll.wait_for_new_data(timeout, m_desc, m_ptr, true)))
         return IDLE;
+    //QThread::currentThread()->msleep(1000);
+
+    //    QTime end = QTime::currentTime();
+    //    end.addMSecs(timeout);
+    //    while(QTime::currentTime()<end){
+    //        m_dll.get_descriptor(m_desc);
+    //        QThread::currentThread()->msleep(10);
+    //        //int tmp =(m_desc.data()->Total)%NbrBufs;
+    //        int tmp =(m_desc.data()->OverallBufsProcessed)%NbrBufs;
+    //        if(m_buf_index != tmp ){
+    //            m_buf_index = tmp;
+    //            break;
+    //        }
+    //    }
+
+    //m_dll.get_shared_memory(m_ptr);
 
     m_buf_index = m_desc.data()->iBuf;
+    if(m_buf_index ==0)
+        m_buf_index = NbrBufs-1;
+    else
+        m_buf_index = m_buf_index-1;
 
-    if(failed(m_dll.get_tof_spectrum(*m_next_tof_Spectrum, m_buf_index)))
+    if(failed(m_dll.get_tof_spectrum(*m_next_tof_Spectrum, m_buf_index))){
+        qDebug()<<"get_tof_spectrum failed "<<last_tofdaq_error;
         return FAILURE;
+    }
+    //    if(failed(m_dll.lock_buf(1000, m_buf_index)))
+    //            qDebug()<<"lock_buf failed "<<last_tofdaq_error;
 
+    //    if(failed(m_dll.unlock_buf(m_buf_index))){
+    //        qDebug()<<"unlock_buf failed "<<last_tofdaq_error;
+    //    }
     //m_next_sum_Spectrum = m_ptr.data()->TofData[m_buf_index];
     //if(failed(m_dll.get_sum_spectrum(*m_next_sum_Spectrum)))
     //   return FAILURE;
@@ -224,6 +256,7 @@ states tof_data_read_worker::process_data()
     QVector<double> tof(16);
     QVector<double> weight(16);
     if(failed(m_dll.get_mass_calib(mode, p, mass, tof, weight))){
+        qDebug()<<"get_mass_calib failed "<<last_tofdaq_error;
         return FAILURE;
     }
 
@@ -239,7 +272,7 @@ states tof_data_read_worker::process_data()
     float NbrBlocks = m_desc.data()->NbrBlocks;
     float SingleIonSignal = m_desc.data()->SingleIonSignal;
     float SampleInterval = m_desc.data()->SampleInterval;
-    float TotalBufsWritten = m_desc.data()->TotalBufsWritten;
+    //float TotalBufsWritten = m_desc.data()->TotalBufsWritten;
 
     float smpletime =   NbrWaveforms \
             *TofPeriod \
@@ -251,7 +284,7 @@ states tof_data_read_worker::process_data()
     //float raw_cnt_fct = (SingleIonSignal) / (SampleInterval * 1.0e+9);
     //float raw_cnt_fct = (SingleIonSignal) ;
 
-    int bgsize = m_bg_Spectrum->size();
+    //int bgsize = m_bg_Spectrum->size();
     double sum_mass = 0;
     foreach (configuration_element* var, m_config.getElements()) {
 
@@ -264,17 +297,22 @@ states tof_data_read_worker::process_data()
             continue;
 
         float sum = 0;
+        float bg_sum = 0;
         for(int i = m_lo; i <= m_hi; i++ ){
             sum += (m_current_tof_Spectrum->at(i)) ;
-            if(bg_spect_cnt>1 && bgsize>i){
-                sum -= (m_bg_Spectrum->at(i)/bg_spect_cnt);
+            if(bg_spect_cnt>1 ){
+                bg_sum += (m_bg_Spectrum->at(i));
             }
         }
+
         sum_mass =  sum
-                *(var->getFact()/var->getSens())
                 *(1.0/SingleIonSignal)
                 *(SampleInterval * 1.0e+9)
                 *(1.0/smpletime);
+        bg_sum = bg_sum*bg_fact/bg_spect_cnt;
+        sum_mass -= bg_sum;
+        sum_mass*=(var->getFact()/var->getSens());
+
 
         //qDebug()<<var->getName()<<sum_mass;
         if(!groups.contains(var->getName()))
@@ -286,11 +324,27 @@ states tof_data_read_worker::process_data()
     qint64 elapsed_ms = start.msecsTo(end);
     meantime = start.addMSecs((elapsed_ms)/2);
 
+    //m_dll.unlock_buf(m_buf_index);
+
     return CHECK_AQ_ACTIVE;
 }
 
 states tof_data_read_worker::record_bg_spec()
 {
+    float NbrWaveforms = m_desc.data()->NbrWaveforms;
+    float TofPeriod = m_desc.data()->TofPeriod;
+    float NbrSegments = m_desc.data()->NbrSegments;
+    float NbrBlocks = m_desc.data()->NbrBlocks;
+    float SingleIonSignal = m_desc.data()->SingleIonSignal;
+    float SampleInterval = m_desc.data()->SampleInterval;
+    //float TotalBufsWritten = m_desc.data()->TotalBufsWritten;
+
+    float bg_smpletime =   NbrWaveforms
+            *TofPeriod
+            *NbrSegments
+            *NbrBlocks
+            *1.0e-9;
+
     if(m_current_tof_Spectrum->size() != m_bg_Spectrum->size()){
         m_bg_Spectrum->clear();
         m_bg_Spectrum->resize(m_current_tof_Spectrum->size());
@@ -302,6 +356,10 @@ states tof_data_read_worker::record_bg_spec()
         float tmp = m_bg_Spectrum->at(i) + m_current_tof_Spectrum->at(i);
         m_bg_Spectrum->replace(i, tmp);
     }
+    bg_fact =1.0
+            *(1.0/SingleIonSignal)
+            *(SampleInterval * 1.0e+9)
+            *(1.0/bg_smpletime);
 
     bg_spect_cnt++;
 
@@ -338,7 +396,7 @@ QDateTime tof_data_read_worker::getMeantime() const
 
 QString tof_data_read_worker::get_bg_file()
 {
-
+    return m_config.getBg_filename();
 }
 
 void tof_data_read_worker::setConfig(const uibk_cloud_configuration &config)
@@ -372,7 +430,10 @@ void tof_data_read_worker::save_current_background()
         qDebug()<<QString("Cannot write file %1:\n%2.").arg(bg_file).arg(file.errorString());
     QDataStream out(&file);   // we will serialize the data into the file
     out << bg_spect_cnt;
+    out << bg_fact;
     out << (*m_bg_Spectrum);
+
+
 }
 
 void tof_data_read_worker::load_last_background()
@@ -390,14 +451,24 @@ void tof_data_read_worker::load_last_background()
     QDataStream in(&file);    // read the data serialized from the file
     QVector<float> bg;
     float cnt;
-    in >> cnt >> bg;
+    float fct;
+    in >> cnt >>fct>> bg;
 
     if(!m_bg_Spectrum)
         return;
 
     bg_spect_cnt = cnt;
+    bg_fact = fct;
     m_bg_Spectrum->clear();
     *m_bg_Spectrum = bg;
+}
+
+void tof_data_read_worker::clear_bg()
+{
+    m_bg_Spectrum->clear();
+    m_bg_Spectrum->resize(m_current_tof_Spectrum->size());
+    m_bg_Spectrum->fill(0);
+    bg_spect_cnt = 0;
 }
 
 void tof_data_read_worker::init()

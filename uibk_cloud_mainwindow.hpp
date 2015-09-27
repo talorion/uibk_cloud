@@ -26,6 +26,7 @@ signals:
     void start_exoprt();
     void stop_export();
 
+
 private:
     void setupEditor();
     void setupGraph();
@@ -46,6 +47,8 @@ public slots:
     //void view_average(QDateTime, averages_t);
     void receive_data(QDateTime mtime, groups_t groups);
 
+    void receive_exported_data(QDateTime mtime, averages_t groups);
+
     void reset_graph();
 
     void bg_meas_state_changed(bool std);
@@ -59,6 +62,8 @@ private slots:
     void about();
 
     void record_bg();
+
+    void toggle_enable_export(bool checked);
 
 private:
     QVBoxLayout * main_layout;
@@ -89,6 +94,9 @@ private:
 
 
     bool bg_meas_state;
+
+    QCheckBox* enable_export_control;
+    QLabel* enable_export_indicator;
 
 };
 

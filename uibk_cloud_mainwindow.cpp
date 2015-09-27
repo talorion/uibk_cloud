@@ -22,7 +22,9 @@ uibk_cloud_mainwindow::uibk_cloud_mainwindow(QWidget *par) :
     graphs(),
     lowerRange(0),
     upperRange(0),
-    bg_meas_state(false)
+    bg_meas_state(false),
+    enable_export_control(NULL),
+    enable_export_indicator(NULL)
 {
     setWindowTitle(tr("uibk cloud"));
 
@@ -30,8 +32,13 @@ uibk_cloud_mainwindow::uibk_cloud_mainwindow(QWidget *par) :
     setupGraph();
 
     central_wdgt = new QWidget(this);
+    enable_export_control = new QCheckBox("enable data export");
+    connect(enable_export_control, SIGNAL(clicked(bool)),this,SLOT(toggle_enable_export(bool)));
+    enable_export_indicator = new QLabel();
     main_layout = new QVBoxLayout();
     //main_layout->addWidget(editor,1);
+    main_layout->addWidget(enable_export_control);
+    main_layout->addWidget(enable_export_indicator);
     main_layout->addWidget(plot,3);
     central_wdgt->setLayout(main_layout);
     setCentralWidget(central_wdgt);
@@ -272,6 +279,13 @@ void uibk_cloud_mainwindow::receive_data(QDateTime mtime, groups_t groups)
     plot->replot();
 }
 
+void uibk_cloud_mainwindow::receive_exported_data(QDateTime mtime, averages_t groups)
+{
+    enable_export_control->setChecked(true);
+    enable_export_indicator->setText("exported "+QString::number(groups.size())+"values at " +mtime.toString());
+    reset_graph();
+}
+
 void uibk_cloud_mainwindow::reset_graph()
 {
     qDebug()<<"AAA";
@@ -355,4 +369,12 @@ void uibk_cloud_mainwindow::record_bg()
         recordBackgroundAction->setIcon(QIcon(":/images/images/record-red.png"));
         emit start_bg_recording();
     }
+}
+
+void uibk_cloud_mainwindow::toggle_enable_export(bool checked)
+{
+    if(checked)
+        emit start_exoprt();
+    else
+        emit stop_export();
 }

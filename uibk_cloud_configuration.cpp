@@ -3,6 +3,7 @@
 //uibk_cloud_configuration::uibk_cloud_configuration(QObject *parent) : QObject(parent)
 uibk_cloud_configuration::uibk_cloud_configuration():
     filename(),
+    bg_filename(),
     elements()
 {
 

@@ -23,7 +23,13 @@ signals:
     void measurement_stopped();
     void measurement_started();
 
+    void data_exported(QDateTime, averages_t);
+
 public slots:
+
+private:
+    int get_export_interval();
+    int save_export_interval(int interval);
 
     // QThread interface
 protected:
