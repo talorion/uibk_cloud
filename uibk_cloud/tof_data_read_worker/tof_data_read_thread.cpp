@@ -158,6 +158,7 @@ void tof_data_read_thread::run()
         //wrk.setConfig(m_config);
         uibk_cloud_configuration l_config = m_config;
         bool bgs = bg_meas;
+        bool old_bgs=bg_meas;
         wrk.save_current_background();
         mutex.unlock();
 
@@ -170,6 +171,10 @@ void tof_data_read_thread::run()
                 break;
             if (abort)
                 return;
+
+            if(!old_bgs && bgs)
+                wrk.clear_bg();
+            old_bgs = bgs;
 
             switch(state){
             case IDLE:              {state =  wrk.idle(); break;}
