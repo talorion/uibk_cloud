@@ -22,7 +22,7 @@ tof_data_export_worker::tof_data_export_worker(QObject *par) :
 
 tof_data_export_worker::~tof_data_export_worker()
 {
-save_folder();
+    save_folder();
 }
 
 void tof_data_export_worker::receive_data(QDateTime mtime, groups_t groups)
@@ -55,16 +55,17 @@ int tof_data_export_worker::get_export_interval()
 
 void tof_data_export_worker::measurement_stopped()
 {
-    bool tmp = export_timer.isActive();
-    disabele_exporting();
-    last_export_state = tmp;
+//    bool tmp = export_timer.isActive();
+//    disabele_exporting();
+//    last_export_state = tmp;
+    reset_data();
 }
 
 void tof_data_export_worker::measurement_started()
 {
-    if(last_export_state){
-        enable_exporting();
-    }
+//    if(last_export_state){
+//        enable_exporting();
+//    }
 }
 
 void tof_data_export_worker::timer_tick()
