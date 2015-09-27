@@ -29,26 +29,26 @@ int main(int argc, char *argv[])
 //    qDebug()<<tmp.getElements().size();
 
     tof_data_read_thread tdrt;
-    QObject::connect(&a,SIGNAL(aboutToQuit()),&tdrt,SLOT(quit()));
+    QObject::connect(&a,SIGNAL(aboutToQuit()),&tdrt,SLOT(quit()),Qt::QueuedConnection);
     //tdrt.start_reading(tmp);
 
     tof_data_export_thread tdet;
-    QObject::connect(&a,SIGNAL(aboutToQuit()),&tdet,SLOT(quit()));
-    QObject::connect(&tdrt,SIGNAL(data_processed(QDateTime,QMap<QString,double>)),&tdet,SIGNAL(receive_data(QDateTime,QMap<QString,double>)));
-    QObject::connect(&tdrt,SIGNAL(measurement_stopped()),&tdet,SIGNAL(measurement_stopped()));
-    QObject::connect(&tdrt,SIGNAL(measurement_started()),&tdet,SIGNAL(measurement_started()));
+    QObject::connect(&a,SIGNAL(aboutToQuit()),&tdet,SLOT(quit()),Qt::QueuedConnection);
+    QObject::connect(&tdrt,SIGNAL(data_processed(QDateTime,QMap<QString,double>)),&tdet,SIGNAL(receive_data(QDateTime,QMap<QString,double>)),Qt::QueuedConnection);
+    QObject::connect(&tdrt,SIGNAL(measurement_stopped()),&tdet,SIGNAL(measurement_stopped()),Qt::QueuedConnection);
+    QObject::connect(&tdrt,SIGNAL(measurement_started()),&tdet,SIGNAL(measurement_started()),Qt::QueuedConnection);
     tdet.start();
 
     uibk_cloud_mainwindow w;
     QObject::connect(&tdrt,SIGNAL(data_processed(QDateTime,QMap<QString,double>)),&w,SLOT(receive_data(QDateTime,QMap<QString,double>)));
     QObject::connect(&tdrt,SIGNAL(measurement_started()),&w,SLOT(reset_graph()),Qt::QueuedConnection);
     QObject::connect(&w,SIGNAL(config_file_changed(QString)), &tdrt,SLOT(start_reading(QString)));
-    QObject::connect(&w,SIGNAL(start_bg_recording()), &tdrt, SLOT(start_reading_bg()));
-    QObject::connect(&w,SIGNAL(stop_bg_recording()), &tdrt, SLOT(start_reading()));
-    QObject::connect(&tdrt,SIGNAL(bg_meas_state_changed(bool)),&w,SLOT(bg_meas_state_changed(bool)));
-    QObject::connect(&w, SIGNAL(start_exoprt()),&tdet,SIGNAL(enable_exporting()));
-    QObject::connect(&w, SIGNAL(stop_export()),&tdet,SIGNAL(disabele_exporting()));
-    QObject::connect(&tdet, SIGNAL(data_exported(QDateTime,averages_t)),&w,SLOT(receive_exported_data(QDateTime,averages_t)));
+    QObject::connect(&w,SIGNAL(start_bg_recording()), &tdrt, SLOT(start_reading_bg()),Qt::QueuedConnection);
+    QObject::connect(&w,SIGNAL(stop_bg_recording()), &tdrt, SLOT(start_reading()),Qt::QueuedConnection);
+    QObject::connect(&tdrt,SIGNAL(bg_meas_state_changed(bool)),&w,SLOT(bg_meas_state_changed(bool)),Qt::QueuedConnection);
+    QObject::connect(&w, SIGNAL(start_exoprt()),&tdet,SIGNAL(enable_exporting()),Qt::QueuedConnection);
+    QObject::connect(&w, SIGNAL(stop_export()),&tdet,SIGNAL(disabele_exporting()),Qt::QueuedConnection);
+    QObject::connect(&tdet, SIGNAL(data_exported(QDateTime,averages_t)),&w,SLOT(receive_exported_data(QDateTime,averages_t)),Qt::QueuedConnection);
     w.show();
 
     // read csv file:

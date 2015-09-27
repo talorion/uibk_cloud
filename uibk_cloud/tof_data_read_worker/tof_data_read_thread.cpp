@@ -150,7 +150,7 @@ void tof_data_read_thread::run()
     tof_data_read_worker wrk;
     connect(&wrk,SIGNAL(measurement_started()),this,SLOT(do_measurement_started()),Qt::QueuedConnection);
     connect(&wrk,SIGNAL(measurement_stopped()),this,SLOT(do_measurement_stopped()),Qt::QueuedConnection);
-    connect(this,SIGNAL(bg_measurement_started()),&wrk,SLOT(clear_bg()));
+    connect(this,SIGNAL(bg_measurement_started()),&wrk,SLOT(clear_bg()),Qt::QueuedConnection);
     mutex.unlock();
 
     forever {

@@ -331,6 +331,8 @@ states tof_data_read_worker::process_data()
 
 states tof_data_read_worker::record_bg_spec()
 {
+    qDebug()<<"record Background";
+
     float NbrWaveforms = m_desc.data()->NbrWaveforms;
     float TofPeriod = m_desc.data()->TofPeriod;
     float NbrSegments = m_desc.data()->NbrSegments;
@@ -438,6 +440,7 @@ void tof_data_read_worker::save_current_background()
 
 void tof_data_read_worker::load_last_background()
 {
+
     QString bg_file = m_config.getBg_filename();
     if(bg_file.isEmpty() || bg_file.isNull())
         return;
@@ -465,6 +468,7 @@ void tof_data_read_worker::load_last_background()
 
 void tof_data_read_worker::clear_bg()
 {
+    qDebug()<<"Background deleted";
     m_bg_Spectrum->clear();
     m_bg_Spectrum->resize(m_current_tof_Spectrum->size());
     m_bg_Spectrum->fill(0);
