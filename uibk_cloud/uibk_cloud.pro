@@ -11,21 +11,19 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = uibk_cloud
 TEMPLATE = app
 
-unix|win32-g++: {
-    QMAKE_CXXFLAGS += -isystem $$[QT_INSTALL_HEADERS]
-    QMAKE_CXXFLAGS += -isystem $$[QT_INSTALL_HEADERS]/QtCore
-    QMAKE_CXXFLAGS += -isystem $$[QT_INSTALL_HEADERS]/QtGui
-    QMAKE_CXXFLAGS += -isystem $$[QT_INSTALL_HEADERS]/QtScript
-    QMAKE_CXXFLAGS += -isystem $$[QT_INSTALL_HEADERS]/QtWidgets
-    QMAKE_CXXFLAGS += -isystem '$ORIGIN'/../../../libs/qcustomplot
-    QMAKE_CXXFLAGS += -Wall
-    QMAKE_CXXFLAGS += -Wextra
-    QMAKE_CXXFLAGS += -ansi
-    QMAKE_CXXFLAGS += -pedantic
-    QMAKE_CXXFLAGS += -Wshadow
-    QMAKE_CXXFLAGS += -Weffc++
-    QMAKE_CXXFLAGS += -Wstrict-aliasing
-}
+win32-g++: QMAKE_CXXFLAGS += -isystem $$[QT_INSTALL_HEADERS]
+win32-g++: QMAKE_CXXFLAGS += -isystem $$[QT_INSTALL_HEADERS]/QtCore
+win32-g++: QMAKE_CXXFLAGS += -isystem $$[QT_INSTALL_HEADERS]/QtGui
+win32-g++: QMAKE_CXXFLAGS += -isystem $$[QT_INSTALL_HEADERS]/QtScript
+win32-g++: QMAKE_CXXFLAGS += -isystem $$[QT_INSTALL_HEADERS]/QtWidgets
+win32-g++: QMAKE_CXXFLAGS += -isystem '$ORIGIN'/../../../libs/qcustomplot
+win32-g++: QMAKE_CXXFLAGS += -Wall
+win32-g++: QMAKE_CXXFLAGS += -Wextra
+win32-g++: QMAKE_CXXFLAGS += -ansi
+win32-g++: QMAKE_CXXFLAGS += -pedantic
+win32-g++: QMAKE_CXXFLAGS += -Wshadow
+win32-g++: QMAKE_CXXFLAGS += -Weffc++
+win32-g++: QMAKE_CXXFLAGS += -Wstrict-aliasing
 
 #==========Deploy
 win32: {

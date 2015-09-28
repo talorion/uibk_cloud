@@ -22,8 +22,6 @@ tof_data_read_worker::tof_data_read_worker(QObject *par) :
     groups(),
     bg_spect_cnt(0),
     bg_fact(1),
-    bg_mode(0),
-    bg_p(),
     measurement_running(false)
 {
     m_dll.init();
@@ -156,10 +154,10 @@ states tof_data_read_worker::prepare_buffers_bg()
     states ret = prepare_buffers();
 
     clear_bg();
-    //    m_bg_Spectrum->clear();
-    //    m_bg_Spectrum->resize(m_current_tof_Spectrum->size());
-    //    m_bg_Spectrum->fill(0);
-    //    bg_spect_cnt = 0;
+//    m_bg_Spectrum->clear();
+//    m_bg_Spectrum->resize(m_current_tof_Spectrum->size());
+//    m_bg_Spectrum->fill(0);
+//    bg_spect_cnt = 0;
     return ret;
 }
 
@@ -293,36 +291,26 @@ states tof_data_read_worker::process_data()
 
         int m_lo = (qFloor(m_tools_dll.mass_to_tof(var->getMass_lo(), mode, p)));
         int m_hi = (qCeil(m_tools_dll.mass_to_tof(var->getMass_hi(), mode, p)));
-
         //qDebug()<<iWrite<<var->getName()<<m_lo<<m_hi;
         if(m_lo<0)
             continue;
         if(m_hi>=m_current_tof_Spectrum->size())
             continue;
 
-        float bg_sum = 0;
-        if(!(bg_p.isEmpty() || m_bg_Spectrum->isEmpty())){
-            int bg_lo = (qFloor(m_tools_dll.mass_to_tof(var->getMass_lo(), bg_mode, bg_p)));
-            int bg_hi = (qCeil(m_tools_dll.mass_to_tof(var->getMass_hi(), bg_mode, bg_p)));
-            for(int i = bg_lo; i <= bg_hi; i++ ){
-                bg_sum += (m_bg_Spectrum->at(i));
-            }
-
-            if(bg_spect_cnt>1 ){
-                bg_sum = bg_sum*bg_fact/bg_spect_cnt;
-            }
-        }
-
         float sum = 0;
+        float bg_sum = 0;
         for(int i = m_lo; i <= m_hi; i++ ){
             sum += (m_current_tof_Spectrum->at(i)) ;
-
+            if(bg_spect_cnt>1 ){
+                bg_sum += (m_bg_Spectrum->at(i));
+            }
         }
+
         sum_mass =  sum
                 *(1.0/SingleIonSignal)
                 *(SampleInterval * 1.0e+9)
                 *(1.0/smpletime);
-
+        bg_sum = bg_sum*bg_fact/bg_spect_cnt;
         sum_mass -= bg_sum;
         sum_mass*=(var->getFact()/var->getSens());
 
@@ -360,25 +348,12 @@ states tof_data_read_worker::record_bg_spec()
             *NbrBlocks
             *1.0e-9;
 
-    bg_mode = 0;
-    //QVector<double> bg_p(m_desc.data()->NbrMassCalibParams);
-    bg_p.clear();
-    bg_p.resize(m_desc.data()->NbrMassCalibParams);
-    QVector<double> mass(16);
-    QVector<double> tof(16);
-    QVector<double> weight(16);
-
-    if(failed(m_dll.get_mass_calib(bg_mode, bg_p, mass, tof, weight))){
-        qDebug()<<"bg get_mass_calib failed "<<last_tofdaq_error;
-        //return FAILURE;
-    }
-
     if(m_current_tof_Spectrum->size() != m_bg_Spectrum->size()){
         clear_bg();
-        //        m_bg_Spectrum->clear();
-        //        m_bg_Spectrum->resize(m_current_tof_Spectrum->size());
-        //        m_bg_Spectrum->fill(0);
-        //        bg_spect_cnt = 0;
+//        m_bg_Spectrum->clear();
+//        m_bg_Spectrum->resize(m_current_tof_Spectrum->size());
+//        m_bg_Spectrum->fill(0);
+//        bg_spect_cnt = 0;
     }
 
     for(int i=0; i<m_current_tof_Spectrum->size();i++){
@@ -450,8 +425,6 @@ void tof_data_read_worker::save_current_background()
     if(bg_spect_cnt<1)
         return;
 
-
-
     QString bg_file = m_config.getBg_filename();
     if(bg_file.isEmpty() || bg_file.isNull())
         return;
@@ -462,8 +435,6 @@ void tof_data_read_worker::save_current_background()
     QDataStream out(&file);   // we will serialize the data into the file
     out << bg_spect_cnt;
     out << bg_fact;
-    out << bg_mode;
-    out << bg_p;
     out << (*m_bg_Spectrum);
 
 
@@ -486,9 +457,7 @@ void tof_data_read_worker::load_last_background()
     QVector<float> bg;
     float cnt;
     float fct;
-    int md;
-    QVector<double> p;
-    in >> cnt >>fct>>md>>p>> bg;
+    in >> cnt >>fct>> bg;
 
     if(!m_bg_Spectrum)
         return;
@@ -498,8 +467,6 @@ void tof_data_read_worker::load_last_background()
     bg_fact = fct;
     //m_bg_Spectrum->clear();
     *m_bg_Spectrum = bg;
-    bg_mode = md;
-    bg_p = p;
 }
 
 void tof_data_read_worker::clear_bg()
