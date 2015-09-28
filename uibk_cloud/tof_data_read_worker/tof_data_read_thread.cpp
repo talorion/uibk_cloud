@@ -202,6 +202,7 @@ void tof_data_read_thread::run()
                     if(state != FAILURE){
                         QDateTime t                     = wrk.getMeantime();
                         QMap<QString, double> dta   = wrk.getGroups();
+                        qDebug() << "(tof_data_read_thread::run()) Emiting data_processed()";
                         emit data_processed(t, dta);
                     }
                 }

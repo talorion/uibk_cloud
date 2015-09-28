@@ -3,6 +3,7 @@
 #include <QFile>
 #include <QSettings>
 #include <QTextStream>
+#include <QFileInfo>
 
 tof_data_export_worker::tof_data_export_worker(QObject *par) :
     QObject(par),
@@ -45,6 +46,7 @@ void tof_data_export_worker::receive_data(QDateTime mtime, groups_t groups)
 
 void tof_data_export_worker::set_export_interval(int msec)
 {
+    qDebug() << "(export worker) Export Timer interval was changed to " << msec;
     export_timer.setInterval(msec);
 }
 
@@ -58,6 +60,7 @@ void tof_data_export_worker::measurement_stopped()
 //    bool tmp = export_timer.isActive();
 //    disabele_exporting();
 //    last_export_state = tmp;
+    qDebug() << "(export worker) Measurement stopped, resetting data!";
     reset_data();
 }
 
@@ -66,11 +69,13 @@ void tof_data_export_worker::measurement_started()
 //    if(last_export_state){
 //        enable_exporting();
 //    }
+    qDebug() << "(export worker) New measurement started";
 }
 
 void tof_data_export_worker::timer_tick()
 {
     //
+    qDebug()<<"(export worker) Time to export avg of " << averages.count() << " values" ;
     if(averages.isEmpty())
         export_nans();
     else
@@ -87,10 +92,13 @@ void tof_data_export_worker::disabele_exporting()
 {
     last_export_state = false;
     export_timer.stop();
+    qDebug() << "(export worker) Exporting was stopped!";
 }
 
 void tof_data_export_worker::reset_data()
 {
+    qDebug() << "(export worker) Clearing Averages";
+    meantimes.clear();
     averages.clear();
     avrg_time.setTime_t(0);
 }
@@ -102,12 +110,24 @@ void tof_data_export_worker::export_data()
     QFile data(filename);
     QString delimiter = ";";
     QString newline = "\n";
+    bool newFile = !data.exists();
     if (!data.open(QFile::WriteOnly | QFile::Append )){
-        qDebug()<<QString("Cannot write file %1:\n%2.").arg(filename).arg(data.errorString());
+        qDebug()<<QString("(export worker) Cannot write file %1:\n%2.").arg(filename).arg(data.errorString());
         return;
     }
 
     QTextStream output(&data);
+    if (newFile)
+    {
+        output<<"Time(UNIX)"<<delimiter;
+        QMap<QString, double >::iterator vit;
+        for(vit = averages.begin(); vit != averages.end(); ++vit){
+            output<<vit.key();
+            if(vit != averages.end()-1)
+                output<<delimiter;
+        }
+        output<<newline;
+    }
 
     output<<QString::number((qint64) (avrg_time.toMSecsSinceEpoch()/1000))<<delimiter;
 //    output<<QString::number(avrg_time.toMSecsSinceEpoch())<<delimiter;
@@ -121,6 +141,9 @@ void tof_data_export_worker::export_data()
     output.flush();
 
     emit data_exported(avrg_time, averages);
+
+    values.clear();
+
     //data.close();
 }
 
@@ -152,6 +175,7 @@ void tof_data_export_worker::export_nans()
 
 void tof_data_export_worker::calculate_averages()
 {
+    //qDebug() << "(tof_data_export_worker::calculate_averages()) Calculating Averages";
     quint64 diff = 0;
     if(meantimes.size()>1)
         diff = meantimes.first().msecsTo(meantimes.last());
@@ -168,11 +192,14 @@ void tof_data_export_worker::calculate_averages()
             avrg += var;
         }
         avrg = avrg/vit.value().size();
+        //qDebug() << vit.key() << " --> " << avrg;
         averages[vit.key()] = avrg;
         last_averages[vit.key()] = avrg;
     }
     //qDebug()<<averages;
     last_averages = averages;
+
+
 
     emit new_average(avrg_time, averages);
     //timer_tick();

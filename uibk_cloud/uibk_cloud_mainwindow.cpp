@@ -275,7 +275,7 @@ void uibk_cloud_mainwindow::receive_data(QDateTime mtime, groups_t groups)
     }
     plot->xAxis->setRangeUpper(time+30);
     //plot->xAxis->setRangeLower(time - 60);
-    plot->yAxis->setRangeLower(lowerRange-10);
+    plot->yAxis->setRangeLower(1e-3);
     plot->yAxis->setRangeUpper(upperRange+10);
 
     plot->replot();
@@ -283,6 +283,7 @@ void uibk_cloud_mainwindow::receive_data(QDateTime mtime, groups_t groups)
 
 void uibk_cloud_mainwindow::receive_exported_data(QDateTime mtime, averages_t groups)
 {
+    qDebug() << "GUI got new set of average data from someone.";
     enable_export_control->setChecked(true);
     enable_export_indicator->setText("exported "+QString::number(groups.size())+"values at " +mtime.toString());
     reset_graph();
@@ -375,6 +376,7 @@ void uibk_cloud_mainwindow::record_bg()
 
 void uibk_cloud_mainwindow::toggle_enable_export(bool checked)
 {
+    qDebug() << "Data export Enabled by GUI Signal";
     if(checked)
         emit start_exoprt();
     else
