@@ -22,6 +22,7 @@ tof_data_read_worker::tof_data_read_worker(QObject *par) :
     groups(),
     bg_spect_cnt(0),
     bg_fact(1),
+    bg_p(),
     measurement_running(false)
 {
     m_dll.init();
@@ -261,6 +262,14 @@ states tof_data_read_worker::process_data()
         return FAILURE;
     }
 
+    if (bg_p.count()<2)
+    {
+        qDebug() << "no valid bg masscale calib factors found (old bg file format), updating your background with the current ones";
+        bg_p.clear();
+        bg_p = p;
+        save_current_background();
+    }
+
     //    int NbrSamples    = m_desc.data()->NbrSamples;
     //    //int NbrPeaks      = m_desc.data()->NbrPeaks;
     //    int NbrSegments   = m_desc.data()->NbrSegments;
@@ -291,19 +300,29 @@ states tof_data_read_worker::process_data()
 
         int m_lo = (qFloor(m_tools_dll.mass_to_tof(var->getMass_lo(), mode, p)));
         int m_hi = (qCeil(m_tools_dll.mass_to_tof(var->getMass_hi(), mode, p)));
+
+        int bg_m_lo = (qFloor(m_tools_dll.mass_to_tof(var->getMass_lo(), mode, bg_p)));
+        int bg_m_hi = (qCeil(m_tools_dll.mass_to_tof(var->getMass_hi(), mode, bg_p)));
+
         //qDebug()<<iWrite<<var->getName()<<m_lo<<m_hi;
         if(m_lo<0)
             continue;
         if(m_hi>=m_current_tof_Spectrum->size())
             continue;
+        if(bg_m_hi>=m_bg_Spectrum->size())
+            continue;
+
 
         float sum = 0;
         float bg_sum = 0;
-        for(int i = m_lo; i <= m_hi; i++ ){
+
+        for(int i = m_lo; i <= m_hi; i++ )
+        {
             sum += (m_current_tof_Spectrum->at(i)) ;
-            if(bg_spect_cnt>1 ){
-                bg_sum += (m_bg_Spectrum->at(i));
-            }
+        }
+        for (int i = bg_m_lo; i <= bg_m_hi; i++)
+        {
+            bg_sum += (m_bg_Spectrum->at(i)) ;
         }
 
         sum_mass =  sum
@@ -341,6 +360,21 @@ states tof_data_read_worker::record_bg_spec()
     float SingleIonSignal = m_desc.data()->SingleIonSignal;
     float SampleInterval = m_desc.data()->SampleInterval;
     //float TotalBufsWritten = m_desc.data()->TotalBufsWritten;
+
+
+    QVector<double> p(m_desc.data()->NbrMassCalibParams);
+    QVector<double> mass(16);
+    QVector<double> tof(16);
+    QVector<double> weight(16);
+    int mode = 0;
+    if(failed(m_dll.get_mass_calib(mode, p, mass, tof, weight))){
+        qDebug()<<"get_mass_calib failed "<<last_tofdaq_error;
+        return FAILURE;
+    }
+
+    bg_p.clear();
+    bg_p=p;
+    qDebug() << "Setting global bg mass scale calib coeffs to: " << bg_p;
 
     float bg_smpletime =   NbrWaveforms
             *TofPeriod
@@ -436,6 +470,7 @@ void tof_data_read_worker::save_current_background()
     out << bg_spect_cnt;
     out << bg_fact;
     out << (*m_bg_Spectrum);
+    out << bg_p;
 
 
 }
@@ -455,16 +490,19 @@ void tof_data_read_worker::load_last_background()
 
     QDataStream in(&file);    // read the data serialized from the file
     QVector<float> bg;
+    QVector<double> p;
     float cnt;
     float fct;
-    in >> cnt >>fct>> bg;
+    in >> cnt >> fct >> bg >> p;
 
     if(!m_bg_Spectrum)
         return;
 
     clear_bg();
+    qDebug() << "Loaded old bg: " << cnt << "Samples, " << " Massscale parameters: " << p << " Length of Spectrum: " << bg.count();
     bg_spect_cnt = cnt;
     bg_fact = fct;
+    bg_p = p;
     //m_bg_Spectrum->clear();
     *m_bg_Spectrum = bg;
 }

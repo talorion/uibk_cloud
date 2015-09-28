@@ -93,6 +93,7 @@ private:
 
     float bg_spect_cnt;
     float bg_fact ;
+    QVector<double> bg_p ;
 
     bool measurement_running;
 
