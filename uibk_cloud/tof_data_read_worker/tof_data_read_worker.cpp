@@ -283,7 +283,12 @@ states tof_data_read_worker::process_data()
     float SingleIonSignal = m_desc.data()->SingleIonSignal;
     float SampleInterval = m_desc.data()->SampleInterval;
     //float TotalBufsWritten = m_desc.data()->TotalBufsWritten;
-
+    qDebug() << "Writes: " << m_desc.data()->iWrite << "/" << m_desc.data()->NbrWrites;
+    if ( m_desc.data()->iWrite == 0)
+    {
+        qDebug() << "first write --> discarding this data";
+        return CHECK_AQ_ACTIVE;
+    }
     float smpletime =   NbrWaveforms \
             *TofPeriod \
             *NbrSegments \
@@ -381,15 +386,6 @@ states tof_data_read_worker::record_bg_spec()
             *NbrSegments
             *NbrBlocks
             *1.0e-9;
-
-    if(m_current_tof_Spectrum->size() != m_bg_Spectrum->size()){
-        clear_bg();
-//        m_bg_Spectrum->clear();
-//        m_bg_Spectrum->resize(m_current_tof_Spectrum->size());
-//        m_bg_Spectrum->fill(0);
-//        bg_spect_cnt = 0;
-    }
-
     for(int i=0; i<m_current_tof_Spectrum->size();i++){
         float tmp = m_bg_Spectrum->at(i) + m_current_tof_Spectrum->at(i);
         m_bg_Spectrum->replace(i, tmp);
@@ -512,7 +508,7 @@ void tof_data_read_worker::clear_bg()
     qDebug()<<"Background deleted";
     m_bg_Spectrum->clear();
     m_bg_Spectrum->resize(m_current_tof_Spectrum->size());
-    m_bg_Spectrum->fill(0);
+    //m_bg_Spectrum->fill(0);
     bg_spect_cnt = 0;
 }
 

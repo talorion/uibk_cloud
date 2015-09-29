@@ -146,6 +146,7 @@ void tof_data_read_thread::do_measurement_stopped()
 
 void tof_data_read_thread::run()
 {
+    bool myoldbgs = false;
     mutex.lock();
     tof_data_read_worker wrk;
     connect(&wrk,SIGNAL(measurement_started()),this,SLOT(do_measurement_started()),Qt::QueuedConnection);
@@ -158,7 +159,7 @@ void tof_data_read_thread::run()
         //wrk.setConfig(m_config);
         uibk_cloud_configuration l_config = m_config;
         bool bgs = bg_meas;
-        bool old_bgs=bg_meas;
+
         wrk.save_current_background();
         mutex.unlock();
 
@@ -171,10 +172,6 @@ void tof_data_read_thread::run()
                 break;
             if (abort)
                 return;
-
-            if(!old_bgs && bgs)
-                wrk.clear_bg();
-            old_bgs = bgs;
 
             switch(state){
             case IDLE:              {state =  wrk.idle(); break;}
@@ -196,6 +193,11 @@ void tof_data_read_thread::run()
             case PROC_DTA:          {
 
                 if(bgs){
+                    if(myoldbgs != bgs)
+                    {
+                        wrk.clear_bg();
+
+                    }
                     state = wrk.record_bg_spec();
                 }else{
                     state =  wrk.process_data();
@@ -206,6 +208,7 @@ void tof_data_read_thread::run()
                         emit data_processed(t, dta);
                     }
                 }
+                myoldbgs = bgs;
                 break;
             }
                 //case FAILURE:           {state =  wrk.failure(state); break;}
